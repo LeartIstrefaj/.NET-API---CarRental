@@ -1,60 +1,19 @@
-using CarRentalApp.Models;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add MongoDB configuration
-builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
-builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
+namespace CarRentalApp.Models
 {
-    var settings = serviceProvider.GetRequiredService<IOptions<MongoDBSettings>>().Value;
-    return new MongoClient(settings.ConnectionString);
-});
-builder.Services.AddSingleton(serviceProvider =>
-{
-    var client = serviceProvider.GetRequiredService<IMongoClient>();
-    var settings = serviceProvider.GetRequiredService<IOptions<MongoDBSettings>>().Value;
-    return client.GetDatabase(settings.DatabaseName);
-});
-
-// Add JWT authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    public class Car
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))
-    };
-});
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
-builder.Services.AddAuthorization();
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        public string Name { get; set; }
+        public double PricePerDay { get; set; }
+        public int Year { get; set; }
+        public string Color { get; set; }
+        public string SteeringType { get; set; }
+        public int NumberOfSeats { get; set; }
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
